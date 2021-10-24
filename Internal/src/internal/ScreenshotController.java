@@ -35,8 +35,7 @@ public class ScreenshotController implements ActionListener, Runnable {
     private Robot robot;
     static int recordingSpeed = 10; //Estatico para modificarlo dinamicamente
     
-    String directory,
-            date;
+    String directory, date;
     SimpleDateFormat formatter;
     BufferedImage screenShot = null;
     File folder;
@@ -136,6 +135,8 @@ public class ScreenshotController implements ActionListener, Runnable {
                             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
+                    isRecording = false;
+                    recordBtn.setText("Iniciar Grabación");
                 }
                 //break;
             }
