@@ -9,8 +9,6 @@ import javax.swing.plaf.basic.BasicInternalFrameUI;
 public class MainFrame extends javax.swing.JFrame{
 
     int fpsCounter[] = {5, 10, 15, 20, 25, 30, 40, 60};
-    //int salt = 0; //En lugar de uns hash único es mejor agregarle una sal de números consecutivos,
-                    //Eso nos optimiza el procesamiento
     boolean interrupt = false;
     
     public MainFrame() {      
@@ -145,6 +143,8 @@ public class MainFrame extends javax.swing.JFrame{
         //1.- Que sea el de captura de pantalla
         //2.- Que sea el de mostrar la imagen (productor-consumidor)
         //3.- Trasladar esto al nuevo controlador
+        
+        //Necesito evitar el freeze que se da al capturar pantalla
         System.out.println("Funcion 1 ejecutada correctamente");
         /*while(true){
             try {
@@ -156,7 +156,7 @@ public class MainFrame extends javax.swing.JFrame{
     }//GEN-LAST:event_jButton1ActionPerformed
     
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-
+        
     }//GEN-LAST:event_jButton2ActionPerformed
 
     /**
