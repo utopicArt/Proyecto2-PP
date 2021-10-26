@@ -9,7 +9,6 @@ import javax.swing.plaf.basic.BasicInternalFrameUI;
 public class MainFrame extends javax.swing.JFrame{
 
     int fpsCounter[] = {5, 10, 15, 20, 25, 30, 40, 60};
-    boolean interrupt = false;
     
     public MainFrame() {      
         initComponents();
@@ -21,15 +20,6 @@ public class MainFrame extends javax.swing.JFrame{
         setVisible(true);
         jComboBox1.setSelectedIndex(1);
     }
-
-    /*
-        Image url = Toolkit.getDefaultToolkit().createImage(this.getClass()
-                .getResource("/recorder/config.png"));
-        Image configIcon = url.getScaledInstance(jLabel3.getWidth(),
-                jLabel3.getHeight(), Image.SCALE_SMOOTH);
-        jLabel3.setIcon(new ImageIcon(configIcon));
-    
-     */
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -46,7 +36,6 @@ public class MainFrame extends javax.swing.JFrame{
         jButton1 = new javax.swing.JButton();
         jComboBox1 = new javax.swing.JComboBox<>();
         jLabel1 = new javax.swing.JLabel();
-        jButton2 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -89,15 +78,13 @@ public class MainFrame extends javax.swing.JFrame{
 
         jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "0.5x", "1.0x", "1.5x", "2.0x", "2.5x", "3.0x", "4.0x", "6.0x" }));
         jComboBox1.setSelectedItem(2);
-
-        jLabel1.setText("Velocidad de grabación:");
-
-        jButton2.setText("jButton2");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                jComboBox1ActionPerformed(evt);
             }
         });
+
+        jLabel1.setText("Velocidad de grabación:");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -108,9 +95,7 @@ public class MainFrame extends javax.swing.JFrame{
                 .addComponent(jInternalFrame1)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(106, 106, 106)
-                .addComponent(jButton2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(106, 324, Short.MAX_VALUE)
                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(126, 126, 126)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -129,8 +114,7 @@ public class MainFrame extends javax.swing.JFrame{
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton2))
+                    .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(25, Short.MAX_VALUE))
         );
 
@@ -139,26 +123,13 @@ public class MainFrame extends javax.swing.JFrame{
 
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        //Hacer un Controller del ActionPerformed y crear 2 hilos
-        //1.- Que sea el de captura de pantalla
-        //2.- Que sea el de mostrar la imagen (productor-consumidor)
-        //3.- Trasladar esto al nuevo controlador
-        
-        //Necesito evitar el freeze que se da al capturar pantalla
-        System.out.println("Funcion 1 ejecutada correctamente");
-        /*while(true){
-            try {
-                robo();
-            } catch (IOException ex) {
-                Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }*/
-    }//GEN-LAST:event_jButton1ActionPerformed
-    
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        
-    }//GEN-LAST:event_jButton2ActionPerformed
 
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        ScreenshotController.recordingSpeed = fpsCounter[jComboBox1.getSelectedIndex()];
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+    
     /**
      * @param args the command line arguments
      */
@@ -195,7 +166,6 @@ public class MainFrame extends javax.swing.JFrame{
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel imageContainer;
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JInternalFrame jInternalFrame1;
     private javax.swing.JLabel jLabel1;
