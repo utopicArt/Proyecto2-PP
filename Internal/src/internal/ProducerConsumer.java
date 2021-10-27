@@ -1,8 +1,6 @@
 package internal;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.awt.image.BufferedImage;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedList;
@@ -13,20 +11,21 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Adrian Marin Alcala 
- * Desc: Aplicacion del productor y consumidor
+ * Desc: Aplicacion del productor y consumidor implementada en la grabacion
  */
 public class ProducerConsumer extends Thread {
 
     static Queue<Integer> numbers = new LinkedList<>();
+    static Queue<BufferedImage> image = new LinkedList<>();
     private static final Lock lock = new ReentrantLock();
     static Random random = new Random();
-    static int numThreads = 3;
+    static int numThreads = 5;
     static int[] sums;
 
     static void ProduceNumbers() {
         int numToEnqueue = 0;
         
-        for (int i = 0; i < 10; i++) {
+        for (int  i = 0; i < 10; i++) {
             //Aquí se agregan los productos a la cola
             numToEnqueue = random.nextInt(10);
             System.out.println("Hilo del productor: agregando " + numToEnqueue + " productos a la cola.");
@@ -38,6 +37,7 @@ public class ProducerConsumer extends Thread {
                 System.err.println("Ocurrió una excepción: " + e.getMessage());
             }
         }
+        System.err.println("Test: " + Thread.currentThread().getName());
     }
 
     static void sumNumbers() {
@@ -68,18 +68,7 @@ public class ProducerConsumer extends Thread {
 
     static boolean isNum = true;
 
-    public static void main(String[] args) {
-        BufferedReader userInput = new BufferedReader(
-                new InputStreamReader(System.in));
-        while (isNum) {
-            try {
-                System.out.print("Ingrese el número de hilos: ");
-                numThreads = Integer.parseInt(userInput.readLine());
-                isNum = false;
-            } catch (IOException | NumberFormatException ex) {
-                isNum = true;
-            }
-        }
+    public void start() {        
         sums = new int[numThreads];
         
         Instant startTime = Instant.now();

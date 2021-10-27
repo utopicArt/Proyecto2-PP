@@ -1,6 +1,7 @@
 package internal;
 
 import java.awt.AWTException;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.Rectangle;
@@ -12,8 +13,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Vector;
@@ -35,7 +34,8 @@ public class ScreenshotController implements ActionListener  {
 
     JFrame Master;
     JLabel imageContainer;
-    JButton recordBtn;
+    JButton triggerBtn;
+    JButton controllerBtn;
 
     private Robot robot;
     static int recordingSpeed = 60;
@@ -45,18 +45,21 @@ public class ScreenshotController implements ActionListener  {
     String screenshotTimeStamp[] = new String[1];
     SimpleDateFormat formatter;
     BufferedImage screenShot[] = new BufferedImage[1];
-    Thread saveThread = null;
+    Thread executorThread = null;
     Thread showThread = null;
+    Thread saveThread = null;
     File folder;
-    boolean isRecording = false;
+    static boolean isRecording = false;
     Image replay[];
     ImageIcon replayImage;
     static JpegImagesToMovie imageToMovie = new JpegImagesToMovie();
 
-    public ScreenshotController(JFrame root, JLabel srcLbl, JButton actionBtn) {
+    public ScreenshotController(JFrame root, JLabel srcLbl, JButton actionBtn,
+            JButton trigger) {
         this.Master = root;
         this.imageContainer = srcLbl;
-        this.recordBtn = actionBtn;
+        this.controllerBtn = actionBtn;
+        this.triggerBtn = trigger;
         initRobot();
 
         formatter = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss-SSS");
@@ -79,20 +82,19 @@ public class ScreenshotController implements ActionListener  {
     }
     
     private void initThreads(){
-        if (saveThread == null) {
-            saveThread = new Thread(() -> {
-                while(isRecording){
+        if (executorThread == null) {
+            executorThread = new Thread(() -> {
+                while (true) {
                     try {
                         takeScreenshot();
                     } catch (IOException ex) {
                         Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-                createVideo();
-            });
+            }, "screenCapture");
         }
-        if(showThread == null){
-            showThread = new Thread(() -> {
+        if(saveThread == null){
+            saveThread = new Thread(() -> {
                 while(isRecording){
                     showVideo();
                 }
@@ -101,15 +103,43 @@ public class ScreenshotController implements ActionListener  {
     }
     
     public void takeScreenshot() throws IOException {
-        date = formatter.format(Calendar.getInstance().getTime());
-        
-        screenshotTimeStamp[bufferPosition] = directory + date + ".jpg";
-        screenShot[bufferPosition] = robot.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
-        screenShot = Arrays.copyOf(screenShot, screenShot.length + 1);
-        screenshotTimeStamp = Arrays.copyOf(screenshotTimeStamp, screenshotTimeStamp.length + 1);
-        bufferPosition++;
-        
-        System.out.println("Imagen tomada correctamente \"" + date + ".jpg\"");     
+        while (isRecording) {
+            date = formatter.format(Calendar.getInstance().getTime());
+
+            screenshotTimeStamp[bufferPosition] = directory + date + ".jpg";
+            screenShot[bufferPosition] = robot.createScreenCapture(
+                    new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
+            screenShot = Arrays.copyOf(screenShot, screenShot.length + 1);
+            screenshotTimeStamp = Arrays.copyOf(screenshotTimeStamp,
+                    screenshotTimeStamp.length + 1);
+            bufferPosition++;
+
+            System.out.println("Imagen tomada correctamente \"" + date + ".jpg\"");
+        }
+    }
+    
+    private void saveScreenshots(){
+        System.out.println("\n\nSe guardaran " + bufferPosition + " imagenes nuevas");
+        bufferPosition = 0;
+
+        for(int i = 0; i < screenShot.length - 1; i++){
+            try {
+                if(screenShot[i] == null){
+                    System.err.println("Error en la imagen " + i);
+                }
+                if(screenshotTimeStamp[i] == null){
+                    System.err.println("Error en el nombre " + i);
+                }                
+                ImageIO.write(screenShot[i], "JPG", new File(screenshotTimeStamp[i]));
+                bufferPosition++;
+                System.out.println("Guardado correcto: " + screenshotTimeStamp[i]);
+            } catch (IOException ex) {
+                Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        screenshotTimeStamp = new String[1];
+        screenShot = new BufferedImage[1];
+        bufferPosition = 0;        
     }
 
     private void createVideo() {
@@ -180,47 +210,54 @@ public class ScreenshotController implements ActionListener  {
                 }
             }
             isRecording = false;
-            recordBtn.setText("Iniciar Grabación");
+            controllerBtn.setText("Iniciar Grabación");
         }
     }
 
+    boolean takingSS = false;
     @Override
-    public void actionPerformed(ActionEvent ae) {
-        recordBtn.setText((isRecording ? "Iniciar Grabación" : "Detener Grabación"));
+    public void actionPerformed(ActionEvent evt) {
+        controllerBtn.setText((isRecording ? "Iniciar Grabación" : "Detener Grabación"));
         isRecording = !isRecording;
+
+        triggerBtn.setEnabled(true);
+        triggerBtn.setBackground((isRecording
+                ? new Color(230, 20, 20) : new Color(230, 20, 20)));
+        triggerBtn.setEnabled(false);
+
+        if (executorThread.getState() != Thread.State.TERMINATED) {
+            if (!executorThread.isAlive()) {
+                executorThread.start();
+                System.err.println("ESTADsO: " + executorThread.getState());
+            } else {
+                System.out.println("\nEl hilo " + executorThread.getName()
+                        + " ya se encuentra activo");
+                if (screenShot.length >= 1) {
+                    System.out.println("Se comenzarán a guardar las imagenes:");
+                    saveScreenshots();
+                    System.err.println("ESTADO: " + executorThread.getState());
+                    executorThread.notify();
+                } else {
+                    System.out.println("Hay algo raro");
+                }
+            }
+        }
+        /*System.err.println("AQUI");
+        if(executorThread.getState() == Thread.State.TERMINATED){
+            if(screenShot.length >= 1){
+                System.out.println("Se comenzarán a guardar las imagenes:");
+                saveScreenshots();
+            }else{
+                System.out.println("Hay algo raro");
+            }
+        }*/
+        
+        /*if(takingSS){
+            saveThr
+        }*/
+        //pc.start();
         //showVideo();
         //createVideo();
-        System.out.println("Inicia");
-        Instant startTime = Instant.now();
-        while(Duration.between(startTime, Instant.now()).getSeconds() < 1){
-            try {
-                takeScreenshot();
-            } catch (IOException ex) {
-                Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        System.out.println("\n\nSe guardaran " + bufferPosition + " imagenes nuevas");
-        bufferPosition = 0;
-
-        for(int i = 0; i < screenShot.length - 1; i++){
-            try {
-                if(screenShot[i] == null){
-                    System.err.println("Error en la imagen " + i);
-                }
-                if(screenshotTimeStamp[i] == null){
-                    System.err.println("Error en el nombre " + i);
-                }                
-                ImageIO.write(screenShot[i], "JPG", new File(screenshotTimeStamp[i]));
-                bufferPosition++;
-                System.out.println("Guardado correcto: " + screenshotTimeStamp[i]);
-            } catch (IOException ex) {
-                Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        screenshotTimeStamp = new String[1];
-        screenShot = new BufferedImage[1];
-        bufferPosition = 0;
-        System.err.println("Terminado en " + Duration.between(startTime, Instant.now()).getSeconds() + " segundos");
+        /*System.out.println("Inicia");*/
     }
-
 }
