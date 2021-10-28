@@ -31,7 +31,7 @@ package internal;
  */
 import java.io.File;
 import java.io.IOException;
-import java.util.Vector;
+import java.util.ArrayList;
 
 import javax.media.ConfigureCompleteEvent;
 import javax.media.Controller;
@@ -42,6 +42,8 @@ import javax.media.EndOfMediaEvent;
 import javax.media.Format;
 import javax.media.Manager;
 import javax.media.MediaLocator;
+import javax.media.NoDataSinkException;
+import javax.media.NoProcessorException;
 import javax.media.PrefetchCompleteEvent;
 import javax.media.Processor;
 import javax.media.RealizeCompleteEvent;
@@ -55,14 +57,13 @@ import javax.media.protocol.ContentDescriptor;
 import javax.media.protocol.DataSource;
 import javax.media.protocol.FileTypeDescriptor;
 
-/**
- * This program takes a list of JPEG image files and convert them into a
- * QuickTime movie.
- */
+/*
+*   Desc: API de comunicación con el Datasink para crear los videos.  
+*/
 class JpegImagesToMovie implements ControllerListener, DataSinkListener {
 
     public boolean doIt(int width, int height, int frameRate,
-            Vector<String> inFiles, MediaLocator outML) {
+            ArrayList<String> inFiles, MediaLocator outML) {
         ImageDataSource ids = new ImageDataSource(width, height, frameRate,
                 inFiles);
 
@@ -71,7 +72,7 @@ class JpegImagesToMovie implements ControllerListener, DataSinkListener {
         try {
             System.err.println("- create processor for the image datasource ...");
             p = Manager.createProcessor(ids);
-        } catch (Exception e) {
+        } catch (IOException | NoProcessorException e) {
             System.err.println("Yikes!  Cannot create a processor from the data source.");
             return false;
         }
@@ -169,7 +170,7 @@ class JpegImagesToMovie implements ControllerListener, DataSinkListener {
             System.err.println("- create DataSink for: " + outML);
             dsink = Manager.createDataSink(ds, outML);
             dsink.open();
-        } catch (Exception e) {
+        } catch (IOException | SecurityException | NoDataSinkException e) {
             System.err.println("Cannot create the DataSink: " + e);
             return null;
         }
@@ -190,7 +191,7 @@ class JpegImagesToMovie implements ControllerListener, DataSinkListener {
                 while (p.getState() < state && stateTransitionOK) {
                     waitSync.wait();
                 }
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
             }
         }
         return stateTransitionOK;
