@@ -49,7 +49,7 @@ public class ScreenshotController implements ActionListener {
     static Queue<BufferedImage> screenShot2Save = new LinkedList<>();
     static Queue<Image> replay = new LinkedList<>();
     static Queue<String> screenshotTimeStamp = new LinkedList<>();
-    Thread executorThread = null;
+    Thread[] executorThread = null;
     Thread showThread = null;
     Thread saveThread = null;
     File folder;
@@ -91,17 +91,20 @@ public class ScreenshotController implements ActionListener {
 
     private void initThreads() {
         if (executorThread == null) {
-            executorThread = new Thread(() -> {
-                while (true) {
-                    try {
-                        takeScreenshot();
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(null,
-                            "Ocurrio un error:" + ex.getMessage(),
-                            "Error al tomar SS", JOptionPane.ERROR_MESSAGE);
+            executorThread = new Thread[30];
+            for (int i = 0; i < 30; i++) {
+                executorThread[i] = new Thread(() -> {
+                    while (true) {
+                        try {
+                            takeScreenshot();
+                        } catch (IOException ex) {
+                            JOptionPane.showMessageDialog(null,
+                                    "Ocurrio un error:" + ex.getMessage(),
+                                    "Error al tomar SS", JOptionPane.ERROR_MESSAGE);
+                        }
                     }
-                }
-            }, "screenCapture");
+                }, "screenCapture" + i);
+            }
         }
         if (showThread == null) {
             showThread = new Thread(() -> {
@@ -115,9 +118,13 @@ public class ScreenshotController implements ActionListener {
                 while (true) {
                     saveScreenshots();
                     if (statusInfo == 2) {
-                        System.out.println("Estatus 2");
                         if (screenShot2Save.isEmpty()) {
                             controllerBtn.setEnabled(false);
+                            try {
+                                Thread.sleep(1500);
+                            } catch (InterruptedException ex) {
+                                Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
+                            }
                             createVideo();
                             statusInfo = 0;
                             controllerBtn.setEnabled(true);
@@ -164,6 +171,8 @@ public class ScreenshotController implements ActionListener {
                 Logger.getLogger(ScreenshotController.class.getName())
                         .log(Level.SEVERE, null, ex);
             }
+        } else {
+            System.out.print("");
         }
     }
 
@@ -233,8 +242,17 @@ public class ScreenshotController implements ActionListener {
                 ? new Color(230, 20, 20) : new Color(189, 189, 189)));
         triggerBtn.setEnabled(false);
   
-        if (executorThread.getState() == Thread.State.NEW) {
-            executorThread.start();
+        if (executorThread[0].getState() == Thread.State.NEW) {
+            for(int i = 0; i < 30; i++){
+                executorThread[i].start();
+            }
+            /*for(int i = 0; i < 5; i++){
+                try {
+                    executorThread[i].join();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }*/
         }  
         if (showThread.getState() == Thread.State.NEW) {
             showThread.start();
