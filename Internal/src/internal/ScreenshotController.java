@@ -13,8 +13,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -41,7 +39,9 @@ public class ScreenshotController implements ActionListener {
     JButton controllerBtn;
 
     private Robot robot;
-    static int recordingSpeed = 60;
+    int screenShotExpected = 0;
+    
+    static int recordingSpeed = 10;
 
     String directory, date;
     SimpleDateFormat formatter;
@@ -73,6 +73,8 @@ public class ScreenshotController implements ActionListener {
         if (!folder.isDirectory()) {
             new File(directory).mkdirs();
         }
+        
+        rec = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
 
         initThreads();
     }
@@ -108,98 +110,107 @@ public class ScreenshotController implements ActionListener {
                 }
             }, "realTimeCapture");
         }
-        if(saveThread == null){
+        if (saveThread == null) {
             saveThread = new Thread(() -> {
-                saveScreenshots();
-            });
+                while (true) {
+                    saveScreenshots();
+                    if (statusInfo == 2) {
+                        System.out.println("Estatus 2");
+                        if (screenShot2Save.isEmpty()) {
+                            controllerBtn.setEnabled(false);
+                            createVideo();
+                            statusInfo = 0;
+                            controllerBtn.setEnabled(true);
+                        }else{
+                            System.out.println("Aún hay imagenes guardandose");
+                        }
+                    }
+                }
+            }, "Save Screenshots");
         }
+    }
+    
+    protected double getMemoryUsage(){
+        return Runtime.getRuntime().totalMemory() / (1024.0 * 1024.0 * 1024.0);
     }
 
     public void takeScreenshot() throws IOException {
         System.out.print("");
         while (isRecording) {
+            if (getMemoryUsage() > 2.85) {
+                System.gc();
+                System.err.println("\n[!]Sistema de emergencia activado\n");
+                if (saveThread.getState() == Thread.State.NEW) {
+                    saveThread.start();
+                }
+            }
             date = formatter.format(Calendar.getInstance().getTime());
             screenshotTimeStamp.add(directory + date + ".jpg");
-            screenShot.add(robot.createScreenCapture(
-                    new Rectangle(Toolkit.getDefaultToolkit().getScreenSize())));
-            screenShot2Save.add(screenShot.getLast());
-            System.out.println("Imagen tomada correctamente \"" + date + ".jpg\"");
+            screenShot.add(robot.createScreenCapture(rec));
+            screenShot2Save.add(robot.createScreenCapture(rec));
+            System.out.println("Imagen tomada: \"" + date + ".jpg\"");
+            System.out.println(getMemoryUsage() + "gb");
         }
     }
 
     private void saveScreenshots() {
-        for (int i = 0; i < screenShot.size() - 1; i++) {
+        System.out.print("");
+        if (screenShot2Save.peek() != null && screenshotTimeStamp.peek()!=null){
             try {
-                if (screenShot2Save.peek() == null || screenshotTimeStamp.peek() == null) {
-                    System.err.println("Ocurrió un error en la imagen " + i);
-                    break;
-                }
-                ImageIO.write(screenShot.poll(), "JPG", 
+                ImageIO.write(screenShot2Save.poll(), "JPG",
                         new File(screenshotTimeStamp.poll()));
                 System.out.println("Guardado correcto");
             } catch (IOException ex) {
-                Logger.getLogger(ScreenshotController.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ScreenshotController.class.getName())
+                        .log(Level.SEVERE, null, ex);
             }
         }
     }
 
     private void createVideo() {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int screenWidth = (int) screenSize.getWidth();
-        int screenHeight = (int) screenSize.getHeight();
+        if (folder.listFiles().length > 1) {
+            File[] listOfFiles = folder.listFiles();
 
-        formatter = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
-        String outputFile = formatter.format(Calendar.getInstance().getTime()) + ".mp4";
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            int screenWidth = (int) screenSize.getWidth();
+            int screenHeight = (int) screenSize.getHeight();
 
-        ArrayList<String> imgLst = new ArrayList<>();
+            formatter = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
+            String outputFile = formatter.format(Calendar.getInstance().getTime()) + ".mp4";
 
-        System.out.println("Obteniendo imagenes de: " + this.directory);
-        File[] listOfFiles = folder.listFiles();
-        System.out.println("Imagenes encontradas: " + listOfFiles.length);
+            ArrayList<String> imgLst = new ArrayList<>();
 
-        for (File listOfFile : listOfFiles) {
-            imgLst.add(listOfFile.getAbsolutePath());
-        }
-        imgLst.forEach((name) -> {
-            System.out.println("Procesando: " + name);
-        });
+            System.out.println("Obteniendo imagenes de: " + this.directory);
+            System.out.println("Imagenes encontradas: " + listOfFiles.length);
 
-        MediaLocator oml;
-        if ((oml = JpegImagesToMovie.createMediaLocator(outputFile)) == null) {
-            System.err.println("No se puede construir media locator de: " + outputFile);
-            System.exit(0);
-        }
-
-        imageToMovie.doIt(screenWidth, screenHeight, 10, imgLst, oml);
-    }
-
-    private void retriveVideo() {
-        //[./]Funciona Bien
-        ArrayList<String> imgLst = new ArrayList<>();
-        File[] listOfFiles = folder.listFiles();
-        for (File listOfFile : listOfFiles) {
-            imgLst.add(listOfFile.getAbsolutePath());
-        }
-        Image url;
-        for (int i = 0; i < imgLst.size(); i++) {
-            System.out.println("Procesando: " + imgLst.get(i));
-            url = Toolkit.getDefaultToolkit().createImage(imgLst.get(i));
-            if (url != null) {
-                replay.add(url.getScaledInstance(imageContainer.getWidth(),
-                        imageContainer.getHeight(), Image.SCALE_SMOOTH));
+            for (File listOfFile : listOfFiles) {
+                imgLst.add(listOfFile.getAbsolutePath());
             }
+            imgLst.forEach((name) -> {
+                System.out.println("Procesando: " + name);
+            });
+
+            MediaLocator oml;
+            if ((oml = JpegImagesToMovie.createMediaLocator(outputFile)) == null) {
+                System.err.println("No se puede construir media locator de: " + outputFile);
+                System.exit(0);
+            }
+
+            imageToMovie.doIt(screenWidth, screenHeight, recordingSpeed, imgLst, oml);
+        }else{
+            JOptionPane.showMessageDialog(null,
+                            "Error al crear video:" + "Hay muy pocas imágenes"
+                            + " en el directorio", "Error al crear",
+                            JOptionPane.ERROR_MESSAGE);
         }
     }
 
     public void showVideo() {
-        //retriveVideo();
         System.out.print("");
         if (screenShot.peek() != null) {
             try {
                 //Esta variable forza al sistema
-                replayImage = new ImageIcon(screenShot.poll()
-                        .getScaledInstance(imageContainer.getWidth(),
-                        imageContainer.getHeight(), Image.SCALE_SMOOTH));
+                replayImage = new ImageIcon(screenShot.poll());
                 imageContainer.setIcon(replayImage);
                 System.err.println("Imagen mostrada");
                 Thread.sleep((long) 16.6666667);
@@ -209,42 +220,29 @@ public class ScreenshotController implements ActionListener {
         }
     }
 
-    boolean takingSS = false;
-
-    boolean mainThreadState = false;
-    boolean showThreadState = false;
     int statusInfo = 0;
-    Instant startTime;
     @Override
     public void actionPerformed(ActionEvent evt) {
         controllerBtn.setText((isRecording ? "Iniciar Grabación" : "Detener Grabación"));
         isRecording = !isRecording;
-        if(statusInfo == 0){
-            startTime = Instant.now();
-        }
+
         statusInfo++;
 
         triggerBtn.setEnabled(true);
         triggerBtn.setBackground((isRecording
                 ? new Color(230, 20, 20) : new Color(189, 189, 189)));
         triggerBtn.setEnabled(false);
-        
-        if(statusInfo == 2){
-            saveScreenshots();
-            createVideo();
-            statusInfo = 0;
-        }
-        
-        if (!mainThreadState) {
+  
+        if (executorThread.getState() == Thread.State.NEW) {
             executorThread.start();
-            mainThreadState = true;
-        } else {
-            System.out.println("\nEl hilo " + executorThread.getName()
-                    + " ya se encuentra activo: " + executorThread.getState());
-        }    
-        if (!showThreadState) {
+        }  
+        if (showThread.getState() == Thread.State.NEW) {
             showThread.start();
-            showThreadState = true;
         }
+        if (saveThread.getState() == Thread.State.NEW) {
+            saveThread.start();
+        }
+        // Al inicia pesa 237.79296875
+        System.out.println(getMemoryUsage() + "gb");
     }
 }
