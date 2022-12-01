@@ -30,7 +30,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
 /**
- * @author: Adrian Marin Alcala 
+ * @author: 
  * Desc: Controlador de la imagen y reproduccion devideo.
  */
 public class ScreenshotController implements ActionListener {
