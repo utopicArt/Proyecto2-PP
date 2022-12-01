@@ -10,7 +10,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @author Adrian Marin Alcala 
+ * @author 
  * Desc: Aplicacion del productor y consumidor implementada en la grabacion
  */
 public class ProducerConsumer extends Thread {
